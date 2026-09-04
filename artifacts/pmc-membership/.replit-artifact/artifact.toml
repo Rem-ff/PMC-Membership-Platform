@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "PMC Membership Platform"
+description = "A private, Arabic-first membership and contribution platform for the Project Management Club at Imam Muhammad bin Saud Islamic University, with role-based access, PMC Credits, progression levels, achievements, digital membership cards, and QR profiles."
+version = "1.0.0"
+id = "artifacts/pmc-membership"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22446
+
+[services.development]
+run = "pnpm --filter @workspace/pmc-membership run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/pmc-membership", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/pmc-membership/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22446"
+BASE_PATH = "/"

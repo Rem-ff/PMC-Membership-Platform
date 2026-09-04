@@ -1,0 +1,15 @@
+PMC Membership Platform — Windows local run
+
+Root .env must contain your existing DATABASE_URL and Clerk keys.
+Use two PowerShell windows from the project root.
+
+API window:
+$env:PORT="5000"; $env:NODE_ENV="development"; pnpm --filter @workspace/api-server run dev
+
+Frontend window:
+$env:PORT="5173"; $env:BASE_PATH="/"; pnpm --filter @workspace/pmc-membership run dev
+
+Open: http://localhost:5173
+
+Important fix in this build:
+Vite now proxies /api to http://127.0.0.1:5000. Without this, browser requests to /api were answered by the frontend dev server with index.html, which caused undefined/member/level/nameAr and array errors across pages.

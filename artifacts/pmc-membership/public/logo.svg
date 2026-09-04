@@ -1,0 +1,5 @@
+<svg width="240" height="80" viewBox="0 0 240 80" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="نادي إدارة المشاريع">
+  <rect width="240" height="80" rx="16" fill="#602B59"/>
+  <image href="/brand/pmc-white.png" x="18" y="12" width="145" height="56" preserveAspectRatio="xMidYMid meet"/>
+  <path d="M184 20h4v40h-4zM196 20h4v40h-4zM208 20h4v40h-4z" fill="#F8B939"/>
+</svg>

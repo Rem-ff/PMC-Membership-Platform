@@ -1,0 +1,987 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Private PMC membership and contribution platform API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+  - name: auth
+  - name: member
+  - name: public
+  - name: leader
+  - name: president
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /auth/activation/check:
+    post:
+      operationId: checkActivation
+      tags: [auth]
+      summary: Check whether a university email can activate a PMC membership
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivationCheckInput"
+      responses:
+        "200":
+          description: Activation eligibility
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivationCheck"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /me:
+    get:
+      operationId: getMe
+      tags: [member]
+      summary: Get the signed-in member profile
+      responses:
+        "200":
+          description: Signed-in member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUser"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /me/dashboard:
+    get:
+      operationId: getMemberDashboard
+      tags: [member]
+      summary: Get the signed-in member dashboard
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /me/credits:
+    get:
+      operationId: getMyCredits
+      tags: [member]
+      summary: Get the signed-in member credit history
+      parameters:
+        - $ref: "#/components/parameters/ActivityFilter"
+      responses:
+        "200":
+          description: Credit transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CreditTransaction"
+  /me/achievements:
+    get:
+      operationId: getMyAchievements
+      tags: [member]
+      summary: Get the signed-in member achievements
+      responses:
+        "200":
+          description: Achievements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Achievement"
+  /me/card:
+    get:
+      operationId: getMyMembershipCard
+      tags: [member]
+      summary: Get digital card data for the signed-in member
+      responses:
+        "200":
+          description: Digital membership card
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipCard"
+  /member/{memberId}:
+    get:
+      operationId: getPublicMemberProfile
+      tags: [public]
+      summary: Get the safe public profile linked from a member QR code
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Public profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicProfile"
+        "404":
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /leader/department:
+    get:
+      operationId: getLeaderDepartment
+      tags: [leader]
+      summary: Get the leader's department and its member contribution summary
+      parameters:
+        - $ref: "#/components/parameters/Search"
+      responses:
+        "200":
+          description: Department data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DepartmentSummary"
+        "403":
+          description: Leader permission required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /leader/credits:
+    post:
+      operationId: awardCredit
+      tags: [leader]
+      summary: Award a predefined credit to an eligible member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreditAwardInput"
+      responses:
+        "201":
+          description: Created credit transaction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditTransaction"
+        "403":
+          description: Permission denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /leader/achievements:
+    post:
+      operationId: createAchievement
+      tags: [leader]
+      summary: Create an achievement for an eligible member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AchievementInput"
+      responses:
+        "201":
+          description: Created achievement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Achievement"
+        "403":
+          description: Permission denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /president/overview:
+    get:
+      operationId: getPresidentOverview
+      tags: [president]
+      summary: Get club overview metrics and recent activity
+      responses:
+        "200":
+          description: Club overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PresidentOverview"
+        "403":
+          description: President permission required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /president/members:
+    get:
+      operationId: listPresidentMembers
+      tags: [president]
+      summary: List club members with search and status filters
+      parameters:
+        - $ref: "#/components/parameters/StatusFilter"
+        - $ref: "#/components/parameters/Search"
+      responses:
+        "200":
+          description: Members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MemberRecord"
+    post:
+      operationId: createMember
+      tags: [president]
+      summary: Add a member record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberInput"
+      responses:
+        "201":
+          description: Created member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberRecord"
+        "409":
+          description: Duplicate email
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /president/members/{memberId}:
+    patch:
+      operationId: updateMember
+      tags: [president]
+      summary: Update member status, role, department, or profile data
+      parameters:
+        - $ref: "#/components/parameters/MemberId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberUpdate"
+      responses:
+        "200":
+          description: Updated member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberRecord"
+        "404":
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /president/transactions:
+    get:
+      operationId: listTransactions
+      tags: [president]
+      summary: List the complete immutable credit audit history
+      parameters:
+        - $ref: "#/components/parameters/ActivityFilter"
+        - $ref: "#/components/parameters/Search"
+      responses:
+        "200":
+          description: Credit audit history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CreditTransaction"
+  /president/departments:
+    get:
+      operationId: listDepartments
+      tags: [president]
+      summary: List configurable club departments
+      responses:
+        "200":
+          description: Departments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Department"
+    post:
+      operationId: createDepartment
+      tags: [president]
+      summary: Create a department
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepartmentInput"
+      responses:
+        "201":
+          description: Created department
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Department"
+  /president/departments/{departmentId}:
+    patch:
+      operationId: updateDepartment
+      tags: [president]
+      summary: Rename, deactivate, or assign the leader of a department
+      parameters:
+        - name: departmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepartmentUpdate"
+      responses:
+        "200":
+          description: Updated department
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Department"
+  /president/credit-types:
+    get:
+      operationId: listCreditTypes
+      tags: [president]
+      summary: List configurable credit types
+      responses:
+        "200":
+          description: Credit types
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CreditType"
+    post:
+      operationId: createCreditType
+      tags: [president]
+      summary: Create a new credit type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreditTypeInput"
+      responses:
+        "201":
+          description: Created credit type
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditType"
+        "409":
+          description: Duplicate credit type name
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateCreditType
+      tags: [president]
+      summary: Update a credit type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreditTypeUpdate"
+      responses:
+        "200":
+          description: Updated credit type
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditType"
+  /president/levels:
+    get:
+      operationId: listLevels
+      tags: [president]
+      summary: List configurable progression levels
+      responses:
+        "200":
+          description: Levels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Level"
+    post:
+      operationId: createLevel
+      tags: [president]
+      summary: Create a new progression level
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LevelInput"
+      responses:
+        "201":
+          description: Created level
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Level"
+        "409":
+          description: Duplicate level key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateLevel
+      tags: [president]
+      summary: Update a level rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LevelUpdate"
+      responses:
+        "200":
+          description: Updated level
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Level"
+  /president/settings:
+    get:
+      operationId: getSettings
+      tags: [president]
+      summary: Get club settings
+      responses:
+        "200":
+          description: Club settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubSettings"
+    patch:
+      operationId: updateSettings
+      tags: [president]
+      summary: Update club settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettingsUpdate"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubSettings"
+  /president/members/export.csv:
+    get:
+      operationId: exportMembersCsv
+      tags: [president]
+      summary: Export all members as CSV (additive endpoint, not in original scope list but required by spec section 31)
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+  /president/transactions/{transactionId}/reverse:
+    post:
+      operationId: reverseTransaction
+      tags: [president]
+      summary: Reverse (invalidate) a credit transaction without deleting it (additive endpoint, required by spec section 13)
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, minLength: 2 }
+      responses:
+        "200":
+          description: Transaction reversed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactionId: { type: string }
+                  valid: { type: boolean }
+  /president/credits:
+    post:
+      operationId: presidentAwardCredit
+      tags: [president]
+      summary: Award a predefined credit to any Member or Department Leader (President-level; the only role that may award credit types requiring President approval)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreditAwardInput"
+      responses:
+        "201":
+          description: Created credit transaction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditTransaction"
+        "403":
+          description: Target is the President herself (self-credit disabled)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /president/audit-logs:
+    get:
+      operationId: listAuditLogs
+      tags: [president]
+      summary: List administrative audit events
+      responses:
+        "200":
+          description: Audit events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditLog"
+components:
+  parameters:
+    MemberId:
+      name: memberId
+      in: path
+      required: true
+      schema:
+        type: string
+    Search:
+      name: search
+      in: query
+      required: false
+      schema:
+        type: string
+    ActivityFilter:
+      name: activityType
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [all, projects, challenges, leadership, other]
+    StatusFilter:
+      name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [PENDING, APPROVED, REJECTED, INACTIVE]
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+        errorAr:
+          type: ["string", "null"]
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+    ActivationCheckInput:
+      type: object
+      required: [fullName, email]
+      properties:
+        fullName:
+          type: string
+          minLength: 2
+        email:
+          type: string
+          format: email
+    ActivationCheck:
+      type: object
+      required: [eligible, status, message]
+      properties:
+        eligible:
+          type: boolean
+        status:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED, INACTIVE, ACTIVATED, NOT_FOUND]
+        message:
+          type: string
+        messageAr:
+          type: string
+        memberId:
+          type: ["string", "null"]
+    CurrentUser:
+      type: object
+      required: [id, memberId, fullName, email, role, membershipStatus, credits, level]
+      properties:
+        id: { type: string }
+        memberId: { type: string }
+        fullName: { type: string }
+        email: { type: string, format: email }
+        college: { type: ["string", "null"] }
+        major: { type: ["string", "null"] }
+        role:
+          type: string
+          enum: [MEMBER, DEPARTMENT_LEADER, PRESIDENT]
+        membershipStatus:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED, INACTIVE]
+        department:
+          type: ["string", "null"]
+        credits: { type: integer }
+        level:
+          $ref: "#/components/schemas/LevelSummary"
+        joinedAt: { type: string, format: date-time }
+        emailVerified: { type: boolean }
+    LevelSummary:
+      type: object
+      required: [key, nameEn, nameAr, symbol, current, nextThreshold, progressPercent]
+      properties:
+        key: { type: string }
+        nameEn: { type: string }
+        nameAr: { type: string }
+        symbol: { type: string }
+        current: { type: integer }
+        nextThreshold: { type: ["integer", "null"] }
+        progressPercent: { type: number }
+    Dashboard:
+      type: object
+      required: [member, recentCredits, recentAchievements, stats]
+      properties:
+        member:
+          $ref: "#/components/schemas/CurrentUser"
+        recentCredits:
+          type: array
+          items: { $ref: "#/components/schemas/CreditTransaction" }
+        recentAchievements:
+          type: array
+          items: { $ref: "#/components/schemas/Achievement" }
+        stats:
+          $ref: "#/components/schemas/MemberStats"
+    MemberStats:
+      type: object
+      required: [projects, challenges, leadership, memberSince]
+      properties:
+        projects: { type: integer }
+        challenges: { type: integer }
+        leadership: { type: integer }
+        memberSince: { type: string, format: date-time }
+    CreditType:
+      type: object
+      required: [id, nameAr, nameEn, creditValue, active, requiresPresidentApproval]
+      properties:
+        id: { type: integer }
+        nameAr: { type: string }
+        nameEn: { type: string }
+        creditValue: { type: integer }
+        active: { type: boolean }
+        requiresPresidentApproval: { type: boolean }
+        description: { type: ["string", "null"] }
+    CreditTransaction:
+      type: object
+      required: [id, memberId, memberName, creditType, creditValue, activityName, activityType, awardedBy, createdAt]
+      properties:
+        id: { type: string }
+        memberId: { type: string }
+        memberName: { type: string }
+        creditType:
+          $ref: "#/components/schemas/CreditType"
+        creditValue: { type: integer }
+        activityName: { type: string }
+        activityType: { type: string }
+        awardedBy: { type: string }
+        approvedBy: { type: ["string", "null"] }
+        note: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+    CreditAwardInput:
+      type: object
+      required: [memberId, creditTypeId, activityName, activityDate]
+      properties:
+        memberId: { type: string }
+        creditTypeId: { type: integer }
+        activityName: { type: string, minLength: 2 }
+        activityDate: { type: string, format: date }
+        note: { type: ["string", "null"] }
+    Achievement:
+      type: object
+      required: [id, memberId, type, title, activity, date, approvedBy]
+      properties:
+        id: { type: string }
+        memberId: { type: string }
+        type:
+          type: string
+          enum: [PROJECT, CHALLENGE, LEADERSHIP, EVENT, IDEA, CONTRIBUTOR, SPECIAL]
+        title: { type: string }
+        activity: { type: string }
+        date: { type: string, format: date }
+        approvedBy: { type: string }
+        description: { type: ["string", "null"] }
+    AchievementInput:
+      type: object
+      required: [memberId, type, title, activity, date]
+      properties:
+        memberId: { type: string }
+        type:
+          type: string
+          enum: [PROJECT, CHALLENGE, LEADERSHIP, EVENT, IDEA, CONTRIBUTOR, SPECIAL]
+        title: { type: string, minLength: 2 }
+        activity: { type: string, minLength: 2 }
+        date: { type: string, format: date }
+        description: { type: ["string", "null"] }
+    MembershipCard:
+      type: object
+      required: [memberName, memberId, membershipYear, level, profileUrl, qrValue]
+      properties:
+        memberName: { type: string }
+        memberId: { type: string }
+        membershipYear: { type: string }
+        level: { $ref: "#/components/schemas/LevelSummary" }
+        profileUrl: { type: string, format: uri }
+        qrValue: { type: string }
+    PublicProfile:
+      type: object
+      required: [memberId, name, level, credits, achievements, memberSince]
+      properties:
+        memberId: { type: string }
+        name: { type: string }
+        level: { $ref: "#/components/schemas/LevelSummary" }
+        credits: { type: integer }
+        achievements:
+          type: array
+          items: { $ref: "#/components/schemas/Achievement" }
+        memberSince: { type: string, format: date-time }
+        department: { type: ["string", "null"] }
+    Department:
+      type: object
+      required: [id, nameAr, nameEn, active, memberCount]
+      properties:
+        id: { type: integer }
+        nameAr: { type: string }
+        nameEn: { type: string }
+        active: { type: boolean }
+        memberCount: { type: integer }
+        leader:
+          type: ["object", "null"]
+          properties:
+            memberId: { type: string }
+            name: { type: string }
+    DepartmentInput:
+      type: object
+      required: [nameAr, nameEn]
+      properties:
+        nameAr: { type: string, minLength: 2 }
+        nameEn: { type: string, minLength: 2 }
+    DepartmentUpdate:
+      type: object
+      properties:
+        nameAr: { type: string, minLength: 2 }
+        nameEn: { type: string, minLength: 2 }
+        active: { type: boolean }
+        leaderMemberId: { type: ["string", "null"] }
+    MemberRecord:
+      allOf:
+        - $ref: "#/components/schemas/CurrentUser"
+        - type: object
+          required: [accountActivated, active]
+          properties:
+            accountActivated: { type: boolean }
+            active: { type: boolean }
+    MemberInput:
+      type: object
+      required: [fullName, email, universityId, college, major, departmentId, role, membershipStatus]
+      properties:
+        fullName: { type: string, minLength: 2 }
+        email: { type: string, format: email }
+        universityId: { type: string, minLength: 1 }
+        college: { type: string }
+        major: { type: string }
+        departmentId: { type: integer }
+        role:
+          type: string
+          enum: [MEMBER, DEPARTMENT_LEADER]
+        membershipStatus:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED, INACTIVE]
+    MemberUpdate:
+      type: object
+      properties:
+        fullName: { type: string, minLength: 2 }
+        college: { type: string }
+        major: { type: string }
+        departmentId: { type: ["integer", "null"] }
+        role:
+          type: string
+          enum: [MEMBER, DEPARTMENT_LEADER]
+        membershipStatus:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED, INACTIVE]
+        rejectionNote: { type: ["string", "null"] }
+        active: { type: boolean }
+    DepartmentSummary:
+      type: object
+      required: [department, members]
+      properties:
+        department: { $ref: "#/components/schemas/Department" }
+        members:
+          type: array
+          items: { $ref: "#/components/schemas/MemberRecord" }
+    PresidentOverview:
+      type: object
+      required: [totalActiveMembers, pendingMembers, totalDepartments, totalCredits, membersByLevel, recentTransactions, recentMembers, closeToNextLevel]
+      properties:
+        totalActiveMembers: { type: integer }
+        pendingMembers: { type: integer }
+        totalDepartments: { type: integer }
+        totalCredits: { type: integer }
+        membersByLevel:
+          type: array
+          items:
+            type: object
+            required: [level, count]
+            properties:
+              level: { type: string }
+              count: { type: integer }
+        recentTransactions:
+          type: array
+          items: { $ref: "#/components/schemas/CreditTransaction" }
+        recentMembers:
+          type: array
+          items: { $ref: "#/components/schemas/MemberRecord" }
+        closeToNextLevel:
+          type: array
+          items: { $ref: "#/components/schemas/MemberRecord" }
+    Level:
+      type: object
+      required: [id, key, nameAr, nameEn, symbol, minCredits, active]
+      properties:
+        id: { type: integer }
+        key: { type: string }
+        nameAr: { type: string }
+        nameEn: { type: string }
+        symbol: { type: string }
+        minCredits:
+          type: integer
+          description: The only field that actually gates level progression. A member's level is derived purely from their summed valid credit transactions against each active level's minCredits, in ascending order.
+        active: { type: boolean }
+        requiresProjectCompletion:
+          type: boolean
+          description: "INFORMATIONAL ONLY in this version: stored and editable by the President, but not enforced by level calculation. A member can reach this level on credits alone even if this is true. See README 'Level requirement flags' for the reasoning."
+        requiresLeadership:
+          type: boolean
+          description: "INFORMATIONAL ONLY in this version -- see requiresProjectCompletion."
+        requiresPresidentApproval:
+          type: boolean
+          description: "INFORMATIONAL ONLY in this version -- see requiresProjectCompletion. Not to be confused with CreditType.requiresPresidentApproval, which IS enforced (Department Leaders are blocked from awarding such credit types)."
+    LevelUpdate:
+      type: object
+      required: [id]
+      properties:
+        id: { type: integer }
+        minCredits: { type: integer, minimum: 0 }
+        requiresProjectCompletion: { type: boolean }
+        requiresLeadership: { type: boolean }
+        requiresPresidentApproval: { type: boolean }
+    LevelInput:
+      type: object
+      required: [key, nameAr, nameEn, symbol, minCredits]
+      properties:
+        key: { type: string, minLength: 2 }
+        nameAr: { type: string, minLength: 2 }
+        nameEn: { type: string, minLength: 2 }
+        symbol: { type: string, minLength: 1 }
+        minCredits: { type: integer, minimum: 0 }
+        requiresProjectCompletion: { type: boolean }
+        requiresLeadership: { type: boolean }
+        requiresPresidentApproval: { type: boolean }
+    CreditTypeUpdate:
+      type: object
+      required: [id]
+      properties:
+        id: { type: integer }
+        nameAr: { type: string }
+        nameEn: { type: string }
+        creditValue: { type: integer, minimum: 1 }
+        active: { type: boolean }
+        requiresPresidentApproval: { type: boolean }
+        description: { type: ["string", "null"] }
+    CreditTypeInput:
+      type: object
+      required: [nameAr, nameEn, creditValue]
+      properties:
+        nameAr: { type: string, minLength: 2 }
+        nameEn: { type: string, minLength: 2 }
+        creditValue: { type: integer, minimum: 1 }
+        requiresPresidentApproval: { type: boolean }
+        description: { type: ["string", "null"] }
+    ClubSettings:
+      type: object
+      required: [membershipYear, publicProfilesDefaultVisible]
+      properties:
+        membershipYear: { type: string }
+        publicProfilesDefaultVisible: { type: boolean }
+    SettingsUpdate:
+      type: object
+      properties:
+        membershipYear: { type: string }
+        publicProfilesDefaultVisible: { type: boolean }
+    AuditLog:
+      type: object
+      required: [id, action, actor, target, timestamp]
+      properties:
+        id: { type: string }
+        action: { type: string }
+        actor: { type: string }
+        target: { type: string }
+        timestamp: { type: string, format: date-time }
+        metadata: { type: object, additionalProperties: true }
