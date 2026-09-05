@@ -5,7 +5,7 @@
       "destination": "https://pmc-membership-platform.onrender.com/api/:path*"
     },
     {
-      "source": "/:path*",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
