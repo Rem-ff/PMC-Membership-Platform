@@ -91,6 +91,8 @@ import {
   useUpdateLevel,
   useUpdateMember,
   useUpdateSettings,
+  customFetch,
+  setAuthTokenGetter,
 } from "@workspace/api-client-react";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { Toaster } from "@/components/ui/toaster";
@@ -111,20 +113,12 @@ function apiErrorMessage(error: any, fallback = "تعذر حفظ التغيير�
 // apiErrorMessage works identically for these two calls; replace with the
 // generated hooks next time codegen runs.
 async function postJson<T>(url: string, body: unknown): Promise<T> {
-  const res = await fetch(url, {
+  return customFetch<T>(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    responseType: "json",
   });
-  const text = await res.text();
-  const data = text ? JSON.parse(text) : null;
-  if (!res.ok) {
-    const err: any = new Error(data?.error || res.statusText);
-    err.data = data;
-    err.status = res.status;
-    throw err;
-  }
-  return data as T;
 }
 
 const queryClient = new QueryClient();
@@ -927,9 +921,20 @@ function RoutedApp() {
   return <Switch><Route path="/" component={HomeRedirect} /><Route path="/sign-in/*?" component={() => <AuthPage />} /><Route path="/sign-up/*?" component={() => <AuthPage signUp />} /><Route path="/activate" component={ActivationPage} /><Route path="/member/:memberId" component={PublicMemberPage} /><Route path="/app/:rest*" component={() => <MemberRoute><MemberData /></MemberRoute>} /><Route path="/app" component={() => <MemberRoute><MemberData /></MemberRoute>} /><Route path="/admin/:rest*" component={AdminRoute} /><Route path="/admin" component={AdminRoute} /><Route component={NotFound} /></Switch>;
 }
 
+function ClerkAuthBridge() {
+  const { getToken } = useAuth();
+
+  useEffect(() => {
+    setAuthTokenGetter(() => getToken());
+    return () => setAuthTokenGetter(null);
+  }, [getToken]);
+
+  return null;
+}
+
 function ClerkProviderWithRoutes() {
   const [, setLocation] = useLocation();
-  return <ClerkProvider publishableKey={clerkPubKey} proxyUrl={clerkProxyUrl} appearance={clerkAppearance} signInUrl={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} localization={{ signIn: { start: { title: "مرحباً بعودتك", subtitle: "سجّل دخولك للوصول إلى مساحتك" } }, signUp: { start: { title: "أنشئ حسابك", subtitle: "ابدأ ببناء أثرك اليوم" } } }} routerPush={(to) => setLocation(stripBase(to))} routerReplace={(to) => setLocation(stripBase(to))}><ClerkCacheInvalidator /><RoutedApp /></ClerkProvider>;
+  return <ClerkProvider publishableKey={clerkPubKey} proxyUrl={clerkProxyUrl} appearance={clerkAppearance} signInUrl={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} localization={{ signIn: { start: { title: "مرحباً بعودتك", subtitle: "سجّل دخولك للوصول إلى مساحتك" } }, signUp: { start: { title: "أنشئ حسابك", subtitle: "ابدأ ببناء أثرك اليوم" } } }} routerPush={(to) => setLocation(stripBase(to))} routerReplace={(to) => setLocation(stripBase(to))}><ClerkAuthBridge /><ClerkCacheInvalidator /><RoutedApp /></ClerkProvider>;
 }
 
 function App() {
